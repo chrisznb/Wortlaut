@@ -23,10 +23,35 @@ use crate::word::Word;
 /// The result is always a valid ASS file, even for an empty word list: header
 /// and section markers are written unconditionally and only the Dialogue lines
 /// depend on the input.
+/// Apply the style's timing offset to every word, clamped at zero so a
+/// negative offset cannot produce timestamps before the start of the video.
+fn shift(words: &[Word], offset_ms: i64) -> Vec<Word> {
+    if offset_ms == 0 {
+        return words.to_vec();
+    }
+    words
+        .iter()
+        .map(|w| {
+            // Clamp the START at zero and rebuild the end from the original
+            // duration. Clamping both ends separately would collapse a word to
+            // zero length when a negative offset pushes it past the start.
+            let duration = w.end_ms.saturating_sub(w.start_ms);
+            let start_ms = (w.start_ms as i64 + offset_ms).max(0) as u64;
+            Word {
+                text: w.text.clone(),
+                start_ms,
+                end_ms: start_ms + duration,
+            }
+        })
+        .collect()
+}
+
 pub fn build_ass(words: &[Word], style: &SubtitleStyle) -> String {
     let mut out = String::with_capacity(2048 + words.len() * 48);
     write_header(&mut out, style);
 
+    let shifted = shift(words, style.offset_ms);
+    let words = shifted.as_slice();
     let groups = group_words(words, style);
     for (gi, group) in groups.iter().enumerate() {
         let hold_ms = hold_until(group, groups.get(gi + 1), style);
@@ -472,6 +497,28 @@ mod readability_tests {
                 (parse_ts(f[1]), parse_ts(f[2]))
             })
             .collect()
+    }
+
+    #[test]
+    fn a_positive_offset_delays_every_caption() {
+        let mut style = StylePreset::BoldCenter.style();
+        style.offset_ms = 200;
+        style.min_line_ms = 0;
+        let ws = words(&[("eins", 0, 300)]);
+        let spans = dialogue_spans(&build_ass(&ws, &style));
+        assert_eq!(spans[0].0, 200, "start shifted by the offset");
+        assert_eq!(spans[0].1, 500, "end shifted by the same amount");
+    }
+
+    #[test]
+    fn a_negative_offset_cannot_produce_times_before_zero() {
+        let mut style = StylePreset::BoldCenter.style();
+        style.offset_ms = -500;
+        style.min_line_ms = 0;
+        let ws = words(&[("eins", 100, 400)]);
+        let spans = dialogue_spans(&build_ass(&ws, &style));
+        assert_eq!(spans[0].0, 0, "clamped at the start of the video");
+        assert!(spans[0].1 > 0, "the word still has a duration");
     }
 
     #[test]

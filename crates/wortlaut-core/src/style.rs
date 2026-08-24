@@ -84,6 +84,12 @@ pub struct SubtitleStyle {
     /// short group is merged with the next one and its dialogue event is held
     /// open into the following pause when there is room.
     pub min_line_ms: u64,
+    /// Shift every caption by this many milliseconds. Whisper reports word
+    /// boundaries slightly ahead of the audio (its timings carry no gaps at
+    /// all: each word starts exactly where the previous one ends), so a small
+    /// positive value delays the highlight until the word is actually audible.
+    /// Negative pulls captions earlier.
+    pub offset_ms: i64,
     pub highlight: HighlightMode,
     /// Script resolution. The pipeline overwrites this with the real video size
     /// so libass does not have to guess a scale factor.
@@ -143,6 +149,7 @@ impl StylePreset {
                 max_gap_ms: 700,
                 max_line_ms: 4000,
                 min_line_ms: 1000,
+                offset_ms: 90,
                 highlight: HighlightMode::ActiveWord,
                 play_res_x: 1080,
                 play_res_y: 1920,
@@ -167,6 +174,7 @@ impl StylePreset {
                 max_gap_ms: 900,
                 max_line_ms: 5000,
                 min_line_ms: 1000,
+                offset_ms: 90,
                 highlight: HighlightMode::ActiveWord,
                 play_res_x: 1080,
                 play_res_y: 1920,
@@ -194,6 +202,7 @@ impl StylePreset {
                 max_gap_ms: 900,
                 max_line_ms: 5000,
                 min_line_ms: 1000,
+                offset_ms: 90,
                 highlight: HighlightMode::KaraokeFill,
                 play_res_x: 1080,
                 play_res_y: 1920,
