@@ -1,0 +1,28 @@
+[package]
+name = "subtext-tauri"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "subtext_tauri_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+# whisper.cpp is a C++ build and by far the slowest part of a cold compile.
+# Turning the feature off keeps the whole app compiling and the UI usable on a
+# machine where it cannot be built; speech recognition then reports
+# `asr_disabled` instead of running.
+[features]
+default = ["whisper"]
+whisper = ["dep:subtext-asr"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+subtext-core = { path = "../crates/subtext-core" }
+subtext-asr = { path = "../crates/subtext-asr", optional = true }
+tauri = { version = "2", features = [] }
+serde = { workspace = true }
+serde_json = { workspace = true }

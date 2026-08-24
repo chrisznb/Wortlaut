@@ -1,0 +1,13 @@
+[package]
+name = "subtext-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+# Domain logic only: word timings, ASS subtitle generation, ffmpeg process
+# wrappers, pipeline orchestration. No model, no GUI, no network.
+[dependencies]
+serde = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }

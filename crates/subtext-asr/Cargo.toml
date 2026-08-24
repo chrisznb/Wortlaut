@@ -1,0 +1,19 @@
+[package]
+name = "subtext-asr"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+# Local speech to text with word level timestamps, via whisper.cpp (whisper-rs).
+# Implements the `Transcriber` trait declared in subtext-core, which is what
+# keeps whisper.cpp out of the core crate's build and test cycle.
+[dependencies]
+subtext-core = { path = "../subtext-core" }
+hound = "3"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+whisper-rs = { version = "0.12", features = ["metal"] }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+whisper-rs = { version = "0.12" }

@@ -1,0 +1,21 @@
+# Rust
+/target
+**/*.rs.bk
+
+# Node
+node_modules/
+ui/dist/
+ui/tsconfig.tsbuildinfo
+
+# Tauri generated
+src-tauri/gen/
+
+# macOS
+.DS_Store
+
+# Local scratch and test media. Scoped on purpose: a bare `*.ass` would be a
+# footgun in a subtitle project, silently swallowing example scripts.
+/samples/
+/scratch/
+*-subtext.mp4
+*-subtext-*.mp4

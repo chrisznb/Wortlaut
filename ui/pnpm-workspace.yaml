@@ -1,0 +1,8 @@
+# ui/ is a single package. The file exists because pnpm refuses to run inside a
+# directory that has a workspace marker above it without one, and because
+# esbuild needs its postinstall allowed or vite build dies on a missing binary.
+packages:
+  - .
+
+onlyBuiltDependencies:
+  - esbuild

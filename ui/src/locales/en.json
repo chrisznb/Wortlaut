@@ -1,0 +1,68 @@
+{
+  "_label": "English",
+
+  "app.title": "subtext",
+  "app.tagline": "Animated captions for your clips. Local, offline, free.",
+
+  "drop.headline": "Drop a video here",
+  "drop.hint": "MP4, MOV and anything else your ffmpeg reads",
+  "drop.button": "Choose video",
+  "drop.active": "Let go to load the clip",
+
+  "file.change": "Choose a different video",
+
+  "style.heading": "Caption style",
+  "style.bold-center": "Bold Center",
+  "style.bold-center.desc": "Three words, dead centre, active word pops",
+  "style.minimal-bottom": "Minimal Bottom",
+  "style.minimal-bottom.desc": "Quiet lower third, longer lines",
+  "style.karaoke-line": "Karaoke Line",
+  "style.karaoke-line.desc": "The line fills up as it is spoken",
+  "style.preview.words": "your words right here",
+
+  "lang.heading": "Spoken language",
+  "lang.auto": "Detect automatically",
+  "lang.de": "German",
+  "lang.en": "English",
+
+  "action.start": "Add captions",
+  "action.again": "Caption another video",
+  "action.reveal": "Show in Finder",
+  "action.details": "Details",
+
+  "stage.probing": "Reading the video",
+  "stage.extracting_audio": "Extracting audio",
+  "stage.transcribing": "Transcribing speech",
+  "stage.building_subtitles": "Building subtitles",
+  "stage.rendering": "Rendering the video",
+  "stage.done": "Finished",
+
+  "result.heading": "Your captioned video is ready",
+
+  "setup.ffmpeg.heading": "ffmpeg is missing",
+  "setup.ffmpeg.body": "subtext uses ffmpeg to read and render video. Install it once, then restart subtext.",
+  "setup.ffmpeg.command": "brew install ffmpeg",
+  "setup.model.heading": "One speech model needed",
+  "setup.model.body": "Models are not bundled with the app. Pick one, it downloads once and then stays on your machine.",
+  "setup.model.base": "Base, fastest, good enough for clear speech",
+  "setup.model.small": "Small, the balanced pick",
+  "setup.model.large-v3-turbo": "Large v3 Turbo, best quality",
+  "setup.model.download": "Download",
+  "setup.model.downloading": "Downloading",
+  "setup.model.installed": "Installed",
+
+  "error.heading": "That did not work",
+  "error.ffmpeg_missing": "ffmpeg was not found on this machine.",
+  "error.ffmpeg_failed": "ffmpeg could not process this file.",
+  "error.file_not_found": "That file is no longer where it was.",
+  "error.model_missing": "No speech model is installed yet.",
+  "error.transcription_failed": "The speech model could not transcribe this audio.",
+  "error.unknown_duration": "The length of this video could not be read.",
+  "error.io_error": "A file could not be read or written.",
+  "error.download_failed": "The model download did not finish.",
+  "error.unknown_style": "That caption style does not exist.",
+  "error.asr_disabled": "This build has speech recognition switched off.",
+  "error.busy": "One video is already being processed.",
+  "error.join_failed": "The background task stopped unexpectedly.",
+  "error.unknown": "Something went wrong."
+}
