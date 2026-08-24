@@ -62,14 +62,11 @@ impl Transcriber for WhisperTranscriber {
             .map_err(|e| Error::Transcription(format!("create_state: {e}")))?;
 
         let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
-        // "auto" must go in as detect_language, not as a language token: passing
-        // the literal string would make whisper look for a language called
-        // "auto" and fall back to English.
-        if self.language == "auto" {
-            params.set_detect_language(true);
-        } else {
-            params.set_language(Some(&self.language));
-        }
+        // whisper.h: "for auto-detection, set to nullptr, \"\" or \"auto\"".
+        // The separate detect_language flag is NOT this: it makes whisper detect
+        // the language and then return without transcribing, which produced runs
+        // with zero captions.
+        params.set_language(Some(&self.language));
         params.set_translate(false);
         // Clips often mix languages, typically German with English terms. A
         // prompt in that shape nudges whisper to keep borrowed words in their
@@ -185,5 +182,44 @@ mod tests {
         assert_eq!(words[0].end_ms, 400, "first word must not run into the second");
         assert_eq!(words[1].end_ms, 480, "zero length words get a minimum duration");
         assert_eq!(words[2].end_ms, 1200);
+    }
+}
+
+#[cfg(test)]
+mod live_tests {
+    use super::*;
+    use crate::Transcriber;
+
+    /// Real transcription against the installed model. Ignored by default
+    /// because it needs the model on disk and takes a few seconds.
+    ///
+    /// ```text
+    /// cargo test -p wortlaut-asr --release -- --ignored --nocapture
+    /// ```
+    #[test]
+    #[ignore = "needs the whisper model and a wav at /tmp/wl-test.wav"]
+    fn auto_language_still_returns_words() {
+        let model = dirs_model_path();
+        let wav = std::path::Path::new("/tmp/wl-test.wav");
+        if !model.is_file() || !wav.is_file() {
+            eprintln!("skipping: model or wav missing");
+            return;
+        }
+        let t = WhisperTranscriber::load(&model, "auto").expect("load");
+        let words = t.transcribe_words(wav).expect("transcribe");
+        eprintln!("got {} words", words.len());
+        for w in words.iter().take(8) {
+            eprintln!("  {:>6}..{:<6} {}", w.start_ms, w.end_ms, w.text);
+        }
+        assert!(!words.is_empty(), "auto language produced no words at all");
+        assert!(
+            words.iter().any(|w| w.end_ms > w.start_ms),
+            "words carry no duration"
+        );
+    }
+
+    fn dirs_model_path() -> std::path::PathBuf {
+        std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+            .join("Library/Application Support/Wortlaut/models/ggml-large-v3-turbo.bin")
     }
 }
