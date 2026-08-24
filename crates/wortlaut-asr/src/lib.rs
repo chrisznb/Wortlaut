@@ -223,3 +223,29 @@ mod live_tests {
             .join("Library/Application Support/Wortlaut/models/ggml-large-v3-turbo.bin")
     }
 }
+
+#[cfg(test)]
+mod dump_tests {
+    use super::*;
+    use crate::Transcriber;
+
+    /// Dump real word timings so caption timing can be inspected against audio.
+    #[test]
+    #[ignore = "needs model + /tmp/wl-test.wav"]
+    fn dump_word_timings() {
+        let model = std::path::PathBuf::from(std::env::var("HOME").unwrap_or_default())
+            .join("Library/Application Support/Wortlaut/models/ggml-large-v3-turbo.bin");
+        let wav = std::path::Path::new("/tmp/wl-test.wav");
+        if !model.is_file() || !wav.is_file() {
+            return;
+        }
+        let t = WhisperTranscriber::load(&model, "auto").unwrap();
+        let words = t.transcribe_words(wav).unwrap();
+        let json: Vec<String> = words
+            .iter()
+            .map(|w| format!("{{\"t\":\"{}\",\"s\":{},\"e\":{}}}", w.text.replace('"', ""), w.start_ms, w.end_ms))
+            .collect();
+        std::fs::write("/tmp/wl-words.json", format!("[{}]", json.join(","))).unwrap();
+        eprintln!("wrote {} words", words.len());
+    }
+}

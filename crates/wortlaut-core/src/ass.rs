@@ -189,10 +189,13 @@ fn write_active_word_lines(out: &mut String, group: &[Word], style: &SubtitleSty
         let mut text = String::new();
         for (j, w) in group.iter().enumerate() {
             if j == i {
-                text.push_str(&format!(
-                    "{{\\k{k}\\1c{hi}\\fscx{pop}\\fscy{pop}}}",
-                    k = ms_to_cs(w.duration_ms()),
-                ));
+                // No \k here on purpose. \k is the karaoke FILL effect: it
+                // sweeps the word from the secondary colour to the primary one
+                // over the given duration, which makes the highlight creep in
+                // ahead of the audio and flicker at the event boundary. In this
+                // mode the active word is simply drawn in the highlight colour
+                // for as long as its own event lasts.
+                text.push_str(&format!("{{\\1c{hi}\\fscx{pop}\\fscy{pop}}}"));
             } else {
                 text.push_str(&format!("{{\\1c{base}\\fscx100\\fscy100}}"));
             }
@@ -398,11 +401,21 @@ mod tests {
             for w in ["EINS", "ZWEI", "DREI"] {
                 assert!(line.contains(w), "line must repeat the whole caption: {line}");
             }
-            assert_eq!(line.matches("\\k").count(), 1, "only the active word is timed");
+            // Exactly one word carries the highlight colour, and no karaoke
+            // fill tag is used (that would bleed the colour in early).
+            assert_eq!(
+                line.matches("\\k").count(),
+                0,
+                "active word mode must not use karaoke fill: {line}"
+            );
         }
         // The active word carries the highlight colour and the scale pop.
         let hi = style.highlight_color.to_ass_inline();
-        assert!(lines[1].contains(&format!("\\k40\\1c{hi}\\fscx112\\fscy112")));
+        assert!(
+            lines[1].contains(&format!("\\1c{hi}\\fscx112\\fscy112")),
+            "the active word carries highlight colour and scale pop: {}",
+            lines[1]
+        );
     }
 
     #[test]
@@ -459,6 +472,20 @@ mod readability_tests {
                 (parse_ts(f[1]), parse_ts(f[2]))
             })
             .collect()
+    }
+
+    #[test]
+    fn active_word_mode_never_emits_a_karaoke_fill_tag() {
+        // \k sweeps a word from the secondary to the primary colour over time.
+        // In active word mode that makes the highlight bleed in before the word
+        // is spoken, so the tag must not appear at all.
+        let style = StylePreset::BoldCenter.style();
+        let ws = words(&[("eins", 0, 400), ("zwei", 400, 800)]);
+        let ass = build_ass(&ws, &style);
+        assert!(
+            !ass.contains("\\k"),
+            "active word mode must not use karaoke fill tags:\n{ass}"
+        );
     }
 
     #[test]
@@ -529,5 +556,39 @@ mod readability_tests {
         let ws = words(&[("lang", 0, 900), ("danach", 2000, 2400)]);
         let groups = group_words(&ws, &style);
         assert_eq!(groups.len(), 2, "a real pause must start a new line");
+    }
+}
+
+#[cfg(test)]
+mod dump_ass {
+    use super::*;
+    use crate::style::StylePreset;
+
+    #[test]
+    #[ignore = "writes /tmp/wl-dump.ass from /tmp/wl-words.json for inspection"]
+    fn dump_from_real_words() {
+        let raw = match std::fs::read_to_string("/tmp/wl-words.json") {
+            Ok(r) => r,
+            Err(_) => return,
+        };
+        let mut words = Vec::new();
+        for chunk in raw.trim_matches(['[', ']']).split("},") {
+            let get = |key: &str| -> Option<String> {
+                let at = chunk.find(&format!("\"{key}\":"))? + key.len() + 3;
+                let rest = &chunk[at..];
+                let end = rest.find(',').unwrap_or(rest.len());
+                Some(rest[..end].trim_matches(['"', '}']).to_string())
+            };
+            if let (Some(t), Some(s), Some(e)) = (get("t"), get("s"), get("e")) {
+                words.push(Word {
+                    text: t,
+                    start_ms: s.parse().unwrap_or(0),
+                    end_ms: e.parse().unwrap_or(0),
+                });
+            }
+        }
+        let style = StylePreset::BoldCenter.style();
+        std::fs::write("/tmp/wl-dump.ass", build_ass(&words, &style)).unwrap();
+        eprintln!("wrote {} words to /tmp/wl-dump.ass", words.len());
     }
 }
