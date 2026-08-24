@@ -79,6 +79,11 @@ pub struct SubtitleStyle {
     pub max_gap_ms: u64,
     /// Hard cap on how long one caption line may stay on screen.
     pub max_line_ms: u64,
+    /// Floor for how long a caption line stays readable. Fast speech produces
+    /// word groups of a few hundred milliseconds, which flash by unread, so a
+    /// short group is merged with the next one and its dialogue event is held
+    /// open into the following pause when there is room.
+    pub min_line_ms: u64,
     pub highlight: HighlightMode,
     /// Script resolution. The pipeline overwrites this with the real video size
     /// so libass does not have to guess a scale factor.
@@ -137,6 +142,7 @@ impl StylePreset {
                 max_words_per_line: 3,
                 max_gap_ms: 700,
                 max_line_ms: 4000,
+                min_line_ms: 1000,
                 highlight: HighlightMode::ActiveWord,
                 play_res_x: 1080,
                 play_res_y: 1920,
@@ -160,6 +166,7 @@ impl StylePreset {
                 max_words_per_line: 6,
                 max_gap_ms: 900,
                 max_line_ms: 5000,
+                min_line_ms: 1000,
                 highlight: HighlightMode::ActiveWord,
                 play_res_x: 1080,
                 play_res_y: 1920,
@@ -186,6 +193,7 @@ impl StylePreset {
                 max_words_per_line: 5,
                 max_gap_ms: 900,
                 max_line_ms: 5000,
+                min_line_ms: 1000,
                 highlight: HighlightMode::KaraokeFill,
                 play_res_x: 1080,
                 play_res_y: 1920,

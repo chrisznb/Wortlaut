@@ -38,10 +38,14 @@ impl WhisperTranscriber {
         let ctx = WhisperContext::new_with_params(path, cparams)
             .map_err(|e| Error::Transcription(format!("failed to load model: {e}")))?;
 
-        Ok(Self {
-            ctx,
-            language: language.to_string(),
-        })
+        // An empty choice means "let whisper decide". Passing "auto" through is
+        // what makes a clip that switches languages mid-way transcribe in the
+        // language actually spoken, instead of forcing every segment into one.
+        let language = match language.trim() {
+            "" => "auto".to_string(),
+            other => other.to_string(),
+        };
+        Ok(Self { ctx, language })
     }
 }
 
@@ -58,8 +62,23 @@ impl Transcriber for WhisperTranscriber {
             .map_err(|e| Error::Transcription(format!("create_state: {e}")))?;
 
         let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
-        params.set_language(Some(&self.language));
+        // "auto" must go in as detect_language, not as a language token: passing
+        // the literal string would make whisper look for a language called
+        // "auto" and fall back to English.
+        if self.language == "auto" {
+            params.set_detect_language(true);
+        } else {
+            params.set_language(Some(&self.language));
+        }
         params.set_translate(false);
+        // Clips often mix languages, typically German with English terms. A
+        // prompt in that shape nudges whisper to keep borrowed words in their
+        // own spelling instead of germanising them. It is a hint, not a
+        // guarantee: whisper decodes one language per window, so a single
+        // English word inside a German sentence can still come out German.
+        params.set_initial_prompt(
+            "Gesprochener Text, teils Deutsch, teils English. Keep English words in English.",
+        );
         params.set_print_special(false);
         params.set_print_progress(false);
         params.set_print_realtime(false);

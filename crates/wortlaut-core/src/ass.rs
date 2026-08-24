@@ -27,10 +27,12 @@ pub fn build_ass(words: &[Word], style: &SubtitleStyle) -> String {
     let mut out = String::with_capacity(2048 + words.len() * 48);
     write_header(&mut out, style);
 
-    for group in group_words(words, style) {
+    let groups = group_words(words, style);
+    for (gi, group) in groups.iter().enumerate() {
+        let hold_ms = hold_until(group, groups.get(gi + 1), style);
         match style.highlight {
-            HighlightMode::KaraokeFill => write_karaoke_fill_line(&mut out, group, style),
-            HighlightMode::ActiveWord => write_active_word_lines(&mut out, group, style),
+            HighlightMode::KaraokeFill => write_karaoke_fill_line(&mut out, group, style, hold_ms),
+            HighlightMode::ActiveWord => write_active_word_lines(&mut out, group, style, hold_ms),
         }
     }
 
@@ -102,6 +104,19 @@ Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n",
 
 // --- line building --------------------------------------------------------
 
+/// How long a group may stay on screen: at least `min_line_ms`, but never past
+/// the moment the next group starts, so lines can never overlap.
+fn hold_until(group: &[Word], next: Option<&&[Word]>, style: &SubtitleStyle) -> u64 {
+    let Some(first) = group.first() else { return 0 };
+    let Some(last) = group.last() else { return 0 };
+    let wanted = first.start_ms + style.min_line_ms;
+    let limit = match next {
+        Some(n) => n.first().map(|w| w.start_ms).unwrap_or(u64::MAX),
+        None => u64::MAX,
+    };
+    last.end_ms.max(wanted.min(limit))
+}
+
 /// Split the word stream into caption lines.
 ///
 /// A line ends when it is full, when the silence before the next word is longer
@@ -117,7 +132,13 @@ fn group_words<'a>(words: &'a [Word], style: &SubtitleStyle) -> Vec<&'a [Word]> 
         let gap_break = !is_last && words[i + 1].start_ms.saturating_sub(words[i].end_ms) > style.max_gap_ms;
         let too_long = words[i].end_ms.saturating_sub(words[start].start_ms) >= style.max_line_ms;
 
-        if is_last || full || gap_break || too_long {
+        // A group that is on screen for less than min_line_ms flashes by
+        // unread, so keep collecting unless the line is genuinely full, a real
+        // pause follows, or it has hit the hard cap.
+        let span_ms = words[i].end_ms.saturating_sub(words[start].start_ms);
+        let too_short = span_ms < style.min_line_ms;
+
+        if is_last || full || too_long || (gap_break && !too_short) {
             groups.push(&words[start..=i]);
             start = i + 1;
         }
@@ -126,7 +147,7 @@ fn group_words<'a>(words: &'a [Word], style: &SubtitleStyle) -> Vec<&'a [Word]> 
     groups
 }
 
-fn write_karaoke_fill_line(out: &mut String, group: &[Word], style: &SubtitleStyle) {
+fn write_karaoke_fill_line(out: &mut String, group: &[Word], style: &SubtitleStyle, hold_ms: u64) {
     let Some(first) = group.first() else { return };
     let Some(last) = group.last() else { return };
 
@@ -147,10 +168,10 @@ fn write_karaoke_fill_line(out: &mut String, group: &[Word], style: &SubtitleSty
         cursor = w.end_ms;
     }
 
-    write_dialogue(out, first.start_ms, last.end_ms, &text);
+    write_dialogue(out, first.start_ms, hold_ms.max(last.end_ms), &text);
 }
 
-fn write_active_word_lines(out: &mut String, group: &[Word], style: &SubtitleStyle) {
+fn write_active_word_lines(out: &mut String, group: &[Word], style: &SubtitleStyle, hold_ms: u64) {
     let base = style.base_color.to_ass_inline();
     let hi = style.highlight_color.to_ass_inline();
     let pop = style.highlight_scale.max(1);
@@ -160,7 +181,9 @@ fn write_active_word_lines(out: &mut String, group: &[Word], style: &SubtitleSty
         // during the pause between two words.
         let end_ms = match group.get(i + 1) {
             Some(next) => next.start_ms.max(active.end_ms),
-            None => active.end_ms,
+            // The last word of a line carries the hold, so a short line stays
+            // readable instead of blinking away with the final syllable.
+            None => hold_ms.max(active.end_ms),
         };
 
         let mut text = String::new();
@@ -404,5 +427,107 @@ mod tests {
         // Exactly the two override blocks we wrote ourselves, no smuggled ones.
         assert_eq!(line.matches('{').count(), 2);
         assert_eq!(line.matches('}').count(), 2);
+    }
+}
+
+#[cfg(test)]
+mod readability_tests {
+    use super::*;
+    use crate::style::{StylePreset, SubtitleStyle};
+
+    fn words(spans: &[(&str, u64, u64)]) -> Vec<Word> {
+        spans
+            .iter()
+            .map(|(t, s, e)| Word { text: (*t).to_string(), start_ms: *s, end_ms: *e })
+            .collect()
+    }
+
+    /// Parse "0:00:01.23" back into milliseconds so tests can assert on timing.
+    fn parse_ts(ts: &str) -> u64 {
+        let parts: Vec<&str> = ts.split(':').collect();
+        let h: u64 = parts[0].parse().unwrap();
+        let m: u64 = parts[1].parse().unwrap();
+        let sec: f64 = parts[2].parse().unwrap();
+        h * 3_600_000 + m * 60_000 + (sec * 1000.0).round() as u64
+    }
+
+    fn dialogue_spans(ass: &str) -> Vec<(u64, u64)> {
+        ass.lines()
+            .filter(|l| l.starts_with("Dialogue:"))
+            .map(|l| {
+                let f: Vec<&str> = l.split(',').collect();
+                (parse_ts(f[1]), parse_ts(f[2]))
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_short_final_line_is_held_long_enough_to_read() {
+        let mut style = StylePreset::BoldCenter.style();
+        style.min_line_ms = 1000;
+        // Two quick words and then silence: without the hold this line would be
+        // gone after 300ms.
+        let ws = words(&[("kurz", 0, 150), ("weg", 150, 300)]);
+        let spans = dialogue_spans(&build_ass(&ws, &style));
+        let last = spans.last().copied().unwrap();
+        assert!(
+            last.1 - spans[0].0 >= 1000,
+            "line should stay at least min_line_ms, got {:?}",
+            last
+        );
+    }
+
+    #[test]
+    fn a_hold_never_runs_into_the_next_line() {
+        let mut style = StylePreset::BoldCenter.style();
+        style.min_line_ms = 2000;
+        style.max_words_per_line = 1;
+        style.max_gap_ms = 10;
+        let ws = words(&[("eins", 0, 100), ("zwei", 400, 600)]);
+        let spans = dialogue_spans(&build_ass(&ws, &style));
+        assert!(spans.len() >= 2, "expected separate lines, got {spans:?}");
+        for pair in spans.windows(2) {
+            assert!(
+                pair[0].1 <= pair[1].0,
+                "line {:?} overlaps the next {:?}",
+                pair[0],
+                pair[1]
+            );
+        }
+    }
+
+    #[test]
+    fn fast_speech_merges_into_readable_groups() {
+        let mut style = StylePreset::BoldCenter.style();
+        style.min_line_ms = 1000;
+        style.max_words_per_line = 4;
+        style.max_gap_ms = 60;
+        // Six rapid words with small gaps: grouping must not produce one line
+        // per word just because each gap slightly exceeds max_gap_ms.
+        let ws = words(&[
+            ("a", 0, 120),
+            ("b", 200, 320),
+            ("c", 400, 520),
+            ("d", 600, 720),
+            ("e", 800, 920),
+            ("f", 1000, 1400),
+        ]);
+        let groups = group_words(&ws, &style);
+        assert!(
+            groups.len() <= 2,
+            "fast speech should merge, got {} groups",
+            groups.len()
+        );
+    }
+
+    #[test]
+    fn a_real_pause_after_a_long_enough_line_still_breaks() {
+        let mut style = StylePreset::BoldCenter.style();
+        style.min_line_ms = 800;
+        style.max_words_per_line = 8;
+        style.max_gap_ms = 500;
+        let ws = words(&[("lang", 0, 900), ("danach", 2000, 2400)]);
+        let groups = group_words(&ws, &style);
+        assert_eq!(groups.len(), 2, "a real pause must start a new line");
     }
 }
