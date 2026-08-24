@@ -11,13 +11,13 @@ use std::path::PathBuf;
 use std::sync::Mutex;
 
 use serde::Serialize;
-use subtext_core::{
+use wortlaut_core::{
     ffmpeg, pipeline, style::StylePreset, Progress, SubtitleStyle, Transcriber, Word,
 };
 use tauri::{AppHandle, Emitter, Manager};
 
-const EVENT_PROGRESS: &str = "subtext://progress";
-const EVENT_DOWNLOAD: &str = "subtext://download";
+const EVENT_PROGRESS: &str = "wortlaut://progress";
+const EVENT_DOWNLOAD: &str = "wortlaut://download";
 
 /// Error shape handed to the frontend. `code` is a stable key the UI translates,
 /// `detail` is diagnostic text that is only shown in the expandable details.
@@ -27,8 +27,8 @@ pub struct CommandError {
     detail: String,
 }
 
-impl From<subtext_core::Error> for CommandError {
-    fn from(e: subtext_core::Error) -> Self {
+impl From<wortlaut_core::Error> for CommandError {
+    fn from(e: wortlaut_core::Error) -> Self {
         Self {
             code: e.code().to_string(),
             detail: e.to_string(),
@@ -103,7 +103,7 @@ fn list_styles() -> Vec<StyleInfo> {
         .collect()
 }
 
-fn hex(c: &subtext_core::Rgb) -> String {
+fn hex(c: &wortlaut_core::Rgb) -> String {
     format!("#{:02X}{:02X}{:02X}", c.r, c.g, c.b)
 }
 
@@ -227,7 +227,7 @@ fn build_transcriber(
     model_path: &std::path::Path,
     language: &str,
 ) -> Result<Box<dyn Transcriber>, CommandError> {
-    let t = subtext_asr::WhisperTranscriber::load(model_path, language)?;
+    let t = wortlaut_asr::WhisperTranscriber::load(model_path, language)?;
     Ok(Box::new(t))
 }
 
@@ -251,7 +251,7 @@ fn build_transcriber(
 struct NullTranscriber;
 
 impl Transcriber for NullTranscriber {
-    fn transcribe_words(&self, _wav: &std::path::Path) -> subtext_core::Result<Vec<Word>> {
+    fn transcribe_words(&self, _wav: &std::path::Path) -> wortlaut_core::Result<Vec<Word>> {
         Ok(Vec::new())
     }
 }
@@ -270,5 +270,5 @@ pub fn run() {
             process_video,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running subtext");
+        .expect("error while running Wortlaut");
 }

@@ -90,7 +90,7 @@ pub fn process_video(
     Ok(out_path)
 }
 
-/// `clip.mov` becomes `clip-subtext.mp4`, next to the original. A numeric suffix
+/// `clip.mov` becomes `clip-wortlaut.mp4`, next to the original. A numeric suffix
 /// is appended rather than overwriting an earlier run.
 pub fn output_path_for(video: &Path, _style_id: &str) -> PathBuf {
     let dir = video.parent().unwrap_or_else(|| Path::new("."));
@@ -99,12 +99,12 @@ pub fn output_path_for(video: &Path, _style_id: &str) -> PathBuf {
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "video".to_string());
 
-    let first = dir.join(format!("{stem}-subtext.mp4"));
+    let first = dir.join(format!("{stem}-wortlaut.mp4"));
     if !first.exists() {
         return first;
     }
     for n in 2..1000 {
-        let cand = dir.join(format!("{stem}-subtext-{n}.mp4"));
+        let cand = dir.join(format!("{stem}-wortlaut-{n}.mp4"));
         if !cand.exists() {
             return cand;
         }
@@ -122,7 +122,7 @@ impl ScratchDir {
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_nanos())
             .unwrap_or(0);
-        let dir = std::env::temp_dir().join(format!("subtext-{}-{nanos}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("Wortlaut-{}-{nanos}", std::process::id()));
         std::fs::create_dir_all(&dir)?;
         Ok(Self(dir))
     }
@@ -145,6 +145,6 @@ mod tests {
     #[test]
     fn output_lands_next_to_the_source_with_an_mp4_extension() {
         let out = output_path_for(Path::new("/tmp/does-not-exist-xyz/clip.mov"), "bold-center");
-        assert_eq!(out, PathBuf::from("/tmp/does-not-exist-xyz/clip-subtext.mp4"));
+        assert_eq!(out, PathBuf::from("/tmp/does-not-exist-xyz/clip-wortlaut.mp4"));
     }
 }

@@ -1,7 +1,7 @@
 {
   "_label": "Deutsch",
 
-  "app.title": "subtext",
+  "app.title": "Wortlaut",
   "app.tagline": "Animierte Untertitel für deine Clips. Lokal, offline, kostenlos.",
 
   "drop.headline": "Video hier ablegen",
@@ -40,7 +40,7 @@
   "result.heading": "Dein Video mit Untertiteln ist fertig",
 
   "setup.ffmpeg.heading": "ffmpeg fehlt",
-  "setup.ffmpeg.body": "subtext nutzt ffmpeg zum Lesen und Rendern von Video. Einmal installieren, dann subtext neu starten.",
+  "setup.ffmpeg.body": "Wortlaut nutzt ffmpeg zum Lesen und Rendern von Video. Einmal installieren, dann Wortlaut neu starten.",
   "setup.ffmpeg.command": "brew install ffmpeg",
   "setup.model.heading": "Ein Sprachmodell wird gebraucht",
   "setup.model.body": "Modelle liegen der App nicht bei. Eins auswählen, es lädt einmal herunter und bleibt dann auf deinem Rechner.",

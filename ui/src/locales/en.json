@@ -1,7 +1,7 @@
 {
   "_label": "English",
 
-  "app.title": "subtext",
+  "app.title": "Wortlaut",
   "app.tagline": "Animated captions for your clips. Local, offline, free.",
 
   "drop.headline": "Drop a video here",
@@ -40,7 +40,7 @@
   "result.heading": "Your captioned video is ready",
 
   "setup.ffmpeg.heading": "ffmpeg is missing",
-  "setup.ffmpeg.body": "subtext uses ffmpeg to read and render video. Install it once, then restart subtext.",
+  "setup.ffmpeg.body": "Wortlaut uses ffmpeg to read and render video. Install it once, then restart Wortlaut.",
   "setup.ffmpeg.command": "brew install ffmpeg",
   "setup.model.heading": "One speech model needed",
   "setup.model.body": "Models are not bundled with the app. Pick one, it downloads once and then stays on your machine.",

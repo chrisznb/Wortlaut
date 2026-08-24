@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "subtext",
+  "productName": "Wortlaut",
   "version": "0.1.0",
-  "identifier": "com.subtext.app",
+  "identifier": "com.wortlaut.app",
   "build": {
     "beforeDevCommand": "pnpm --dir ui dev",
     "devUrl": "http://localhost:1421",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "subtext",
+        "title": "Wortlaut",
         "width": 880,
         "height": 700,
         "minWidth": 720,

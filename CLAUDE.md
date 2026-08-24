@@ -1,9 +1,9 @@
-# subtext — Repo-Kontext
+# Wortlaut — Repo-Kontext
 
 macOS-App, die fertige Kurzvideos lokal mit animierten, wortgenauen Untertiteln
 versieht (Submagic-/CapCut-Pro-Alternative, dort 19-39 USD/Monat). Rust/Tauri v2,
 React/TS-Frontend, whisper.cpp fuer Wort-Zeitstempel, ffmpeg + libass fuers
-Rendern. MIT. Arbeitsname "subtext", Umbenennung noch offen.
+Rendern. MIT. Name: "Wortlaut".
 
 ## Kernidee
 Der Karaoke-Effekt wird NICHT frameweise gerendert, sondern als ASS-Untertitel
@@ -12,7 +12,7 @@ Deshalb ist die Pipeline kurz und schnell. Wer hier Frames malen will, hat die
 Architektur missverstanden.
 
 ## Struktur
-- `crates/subtext-core` — die ganze Domaenenlogik, ohne Modell und ohne GUI:
+- `crates/wortlaut-core` — die ganze Domaenenlogik, ohne Modell und ohne GUI:
   - `ass.rs` — Herzstueck. `build_ass(words, style) -> String`. Zwei Modi:
     `KaraokeFill` (ein Event pro Zeile, `\k` pro Wort, Zeile fuellt sich) und
     `ActiveWord` (ein Event pro Wort, ganze Zeile neu gezeichnet, nur das
@@ -27,23 +27,23 @@ Architektur missverstanden.
   - `style.rs` — Presets. Groessen sind PROZENT der Videohoehe, nicht Pixel,
     damit 1080p und 4K gleich aussehen. `pipeline` setzt `play_res_*` auf die
     echte Framegroesse.
-- `crates/subtext-asr` — whisper-rs. Wort-Zeitstempel entstehen durch
+- `crates/wortlaut-asr` — whisper-rs. Wort-Zeitstempel entstehen durch
   `token_timestamps(true)` + `max_len(1)` + `split_on_word(true)`: whisper gibt
   dann ein Segment PRO WORT aus. Implementiert `Transcriber` aus core.
 - `src-tauri` — Tauri-Shell. Alle langsamen Commands ueber
   `tauri::async_runtime::spawn_blocking`, sonst friert das Webview ein.
-  Fortschritt via `app.emit("subtext://progress", Progress)`.
+  Fortschritt via `app.emit("wortlaut://progress", Progress)`.
 - `ui` — React + Vite SPA, zweisprachig.
 
 ## Build
 ```bash
 cd ui && pnpm install && pnpm build && cd ..   # ZUERST, cargo bettet ui/dist ein
 cargo build --release
-cargo test -p subtext-core
+cargo test -p wortlaut-core
 ui/node_modules/.bin/tauri build --bundles app dmg
 ```
 whisper.cpp ist der langsamste Teil. Notausgang, wenn es klemmt:
-`cargo build --release --no-default-features -p subtext-tauri` — dann meldet
+`cargo build --release --no-default-features -p wortlaut-tauri` — dann meldet
 die ASR `asr_disabled`, alles andere laeuft weiter.
 
 ## Konventionen
@@ -58,7 +58,7 @@ die ASR `asr_disabled`, alles andere laeuft weiter.
 - Netzwerk nur fuer den optionalen Modell-Download (`src-tauri/src/models.rs`,
   per System-`curl`). Sonst laeuft alles offline — das ist das Produkt.
 - Modelle NIE ins Repo, NIE ins Bundle. Sie liegen in
-  `~/Library/Application Support/subtext/models`.
+  `~/Library/Application Support/Wortlaut/models`.
 
 ## Fallen, die schon zugeschnappt sind
 - **Fontconfig + Bold-Flag**: `Fontname: Avenir Next` zusammen mit `Bold: -1`
@@ -75,8 +75,8 @@ die ASR `asr_disabled`, alles andere laeuft weiter.
 
 ## Test
 ```bash
-cargo test -p subtext-core                                          # schnell, ohne ffmpeg
-cargo test -p subtext-core --test render_smoke -- --ignored --nocapture   # echter Burn-in
+cargo test -p wortlaut-core                                          # schnell, ohne ffmpeg
+cargo test -p wortlaut-core --test render_smoke -- --ignored --nocapture   # echter Burn-in
 ```
 Der Smoke-Test baut sich sein Testvideo selbst und rendert alle Presets durch.
 

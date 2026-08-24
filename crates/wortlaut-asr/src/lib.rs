@@ -10,7 +10,7 @@
 
 use std::path::Path;
 
-use subtext_core::{Error, Result, Transcriber, Word};
+use wortlaut_core::{Error, Result, Transcriber, Word};
 use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
 
 /// A loaded whisper model.
@@ -125,7 +125,7 @@ fn recommended_threads() -> i32 {
         .clamp(1, 8)
 }
 
-/// Read the WAV that `subtext_core::ffmpeg::extract_audio` produced.
+/// Read the WAV that `wortlaut_core::ffmpeg::extract_audio` produced.
 ///
 /// ffmpeg is asked for 16 kHz mono PCM, so this only has to handle that shape
 /// plus float WAVs, and it fails loudly rather than resampling silently wrong.

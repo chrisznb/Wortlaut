@@ -1,4 +1,4 @@
-//! subtext-core - the offline captioning pipeline.
+//! wortlaut-core - the offline captioning pipeline.
 //!
 //! Stages, in order:
 //!   1. [`ffmpeg::extract_audio`]  video -> 16 kHz mono WAV

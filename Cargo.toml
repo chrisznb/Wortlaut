@@ -1,12 +1,12 @@
-# subtext - Cargo workspace root.
+# Wortlaut - Cargo workspace root.
 # Split mirrors WhimprFlow: a dependency-light `core` crate that owns the domain
 # logic (and is therefore fast to test), plus a heavy `asr` crate that pulls in
 # whisper.cpp and implements the trait declared in core.
 [workspace]
 resolver = "2"
 members = [
-    "crates/subtext-core",
-    "crates/subtext-asr",
+    "crates/wortlaut-core",
+    "crates/wortlaut-asr",
     "src-tauri",
 ]
 
@@ -15,7 +15,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.82"
 license = "MIT"
-authors = ["subtext contributors"]
+authors = ["Wortlaut contributors"]
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }

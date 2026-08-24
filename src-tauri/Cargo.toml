@@ -1,12 +1,12 @@
 [package]
-name = "subtext-tauri"
+name = "wortlaut-tauri"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
 [lib]
-name = "subtext_tauri_lib"
+name = "wortlaut_tauri_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 # whisper.cpp is a C++ build and by far the slowest part of a cold compile.
@@ -15,14 +15,14 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 # `asr_disabled` instead of running.
 [features]
 default = ["whisper"]
-whisper = ["dep:subtext-asr"]
+whisper = ["dep:wortlaut-asr"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-subtext-core = { path = "../crates/subtext-core" }
-subtext-asr = { path = "../crates/subtext-asr", optional = true }
+wortlaut-core = { path = "../crates/wortlaut-core" }
+wortlaut-asr = { path = "../crates/wortlaut-asr", optional = true }
 tauri = { version = "2", features = [] }
 serde = { workspace = true }
 serde_json = { workspace = true }

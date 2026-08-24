@@ -3084,36 +3084,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
-name = "subtext-asr"
-version = "0.1.0"
-dependencies = [
- "hound",
- "subtext-core",
- "whisper-rs",
-]
-
-[[package]]
-name = "subtext-core"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "serde",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "subtext-tauri"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "subtext-asr",
- "subtext-core",
- "tauri",
- "tauri-build",
-]
-
-[[package]]
 name = "swift-rs"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4569,6 +4539,36 @@ name = "wit-bindgen"
 version = "0.57.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
+
+[[package]]
+name = "wortlaut-asr"
+version = "0.1.0"
+dependencies = [
+ "hound",
+ "whisper-rs",
+ "wortlaut-core",
+]
+
+[[package]]
+name = "wortlaut-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "wortlaut-tauri"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "wortlaut-asr",
+ "wortlaut-core",
+]
 
 [[package]]
 name = "writeable"

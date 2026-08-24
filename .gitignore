@@ -17,5 +17,5 @@ src-tauri/gen/
 # footgun in a subtitle project, silently swallowing example scripts.
 /samples/
 /scratch/
-*-subtext.mp4
-*-subtext-*.mp4
+*-wortlaut.mp4
+*-wortlaut-*.mp4

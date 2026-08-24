@@ -13,7 +13,7 @@ import { resolveLang, setLang } from "./i18n";
 
 // Language is picked once from the system locale before the first render, so no
 // component ever paints an English string and then swaps it.
-setLang(resolveLang(localStorage.getItem("subtext.lang") ?? undefined));
+setLang(resolveLang(localStorage.getItem("wortlaut.lang") ?? undefined));
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

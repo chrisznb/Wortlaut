@@ -4,16 +4,16 @@
 //! seconds. Run it with:
 //!
 //! ```text
-//! cargo test -p subtext-core --test render_smoke -- --ignored --nocapture
+//! cargo test -p wortlaut-core --test render_smoke -- --ignored --nocapture
 //! ```
 
 use std::path::PathBuf;
 use std::process::Command;
 
-use subtext_core::{build_ass, ffmpeg, StylePreset, Word};
+use wortlaut_core::{build_ass, ffmpeg, StylePreset, Word};
 
 fn scratch(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join("subtext-render-smoke");
+    let dir = std::env::temp_dir().join("Wortlaut-render-smoke");
     std::fs::create_dir_all(&dir).unwrap();
     dir.join(name)
 }

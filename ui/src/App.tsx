@@ -84,14 +84,14 @@ export default function App() {
   }, [refreshStatus]);
 
   useEffect(() => {
-    const unlisten = listen<Progress>("subtext://progress", (e) => setProgress(e.payload));
+    const unlisten = listen<Progress>("wortlaut://progress", (e) => setProgress(e.payload));
     return () => {
       unlisten.then((f) => f()).catch(() => undefined);
     };
   }, []);
 
   useEffect(() => {
-    const unlisten = listen<{ percent: number }>("subtext://download", (e) =>
+    const unlisten = listen<{ percent: number }>("wortlaut://download", (e) =>
       setDownloadPct(e.payload.percent),
     );
     return () => {
@@ -181,7 +181,7 @@ export default function App() {
 
   const switchLang = useCallback((code: string) => {
     setLang(code);
-    localStorage.setItem("subtext.lang", code);
+    localStorage.setItem("wortlaut.lang", code);
     setUiLang(code);
   }, []);
 

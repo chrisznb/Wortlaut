@@ -1,6 +1,6 @@
 //! Thin wrappers around the system ffmpeg binary.
 //!
-//! ffmpeg is called as a subprocess rather than linked, so subtext stays MIT and
+//! ffmpeg is called as a subprocess rather than linked, so Wortlaut stays MIT and
 //! the user keeps control over which build (and which codecs) they run.
 //!
 //! macOS detail that matters: an app launched from Finder inherits a minimal
@@ -23,7 +23,7 @@ const SEARCH_DIRS: &[&str] = &[
 ];
 
 /// Override for both binaries, useful for tests and for bundling later.
-const ENV_OVERRIDE: &str = "SUBTEXT_FFMPEG_DIR";
+const ENV_OVERRIDE: &str = "WORTLAUT_FFMPEG_DIR";
 
 /// What we need to know about the source video before generating subtitles.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -31,9 +31,9 @@ impl Word {
 
 /// Anything that can turn a 16 kHz mono WAV file into word level timings.
 ///
-/// Declared here rather than in the ASR crate so that `subtext-core` (and its
+/// Declared here rather than in the ASR crate so that `wortlaut-core` (and its
 /// tests) never has to link whisper.cpp. The real implementation lives in
-/// `subtext-asr`; tests use a stub.
+/// `wortlaut-asr`; tests use a stub.
 pub trait Transcriber: Send + Sync {
     fn transcribe_words(&self, wav_path: &Path) -> crate::Result<Vec<Word>>;
 }

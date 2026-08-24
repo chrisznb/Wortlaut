@@ -2,7 +2,7 @@
 //!
 //! Models are not shipped with the app: they are large and carry their own
 //! licence. They live in the app support directory and are fetched on demand,
-//! which is the one and only time subtext touches the network.
+//! which is the one and only time Wortlaut touches the network.
 
 use std::path::PathBuf;
 
@@ -48,11 +48,11 @@ pub fn spec(id: &str) -> Option<&'static ModelSpec> {
     CATALOG.iter().find(|m| m.id == id)
 }
 
-/// `~/Library/Application Support/subtext/models`
+/// `~/Library/Application Support/Wortlaut/models`
 pub fn model_dir() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string());
     PathBuf::from(home)
-        .join("Library/Application Support/subtext/models")
+        .join("Library/Application Support/Wortlaut/models")
 }
 
 pub fn statuses() -> Vec<ModelStatus> {
