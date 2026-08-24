@@ -50,7 +50,8 @@ pub fn build_ass(words: &[Word], style: &SubtitleStyle) -> String {
     let mut out = String::with_capacity(2048 + words.len() * 48);
     write_header(&mut out, style);
 
-    let shifted = shift(words, style.offset_ms);
+    let trimmed = crate::word::trim_trailing_silence(words);
+    let shifted = shift(&trimmed, style.offset_ms);
     let words = shifted.as_slice();
     let groups = group_words(words, style);
     for (gi, group) in groups.iter().enumerate() {

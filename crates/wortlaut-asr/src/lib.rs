@@ -107,9 +107,31 @@ impl Transcriber for WhisperTranscriber {
             if text.is_empty() {
                 continue;
             }
-            // whisper.cpp reports segment times in centiseconds.
-            let t0 = state.full_get_segment_t0(i).unwrap_or(0).max(0) as u64 * 10;
-            let t1 = state.full_get_segment_t1(i).unwrap_or(0).max(0) as u64 * 10;
+            // Segment times are coarse: with max_len(1) whisper still reports
+            // the span it decoded in, so a word next to a pause inherits the
+            // whole pause. Token times inside the segment are tighter, so use
+            // them when they look sane and fall back to the segment otherwise.
+            let seg_t0 = state.full_get_segment_t0(i).unwrap_or(0).max(0) as u64 * 10;
+            let seg_t1 = state.full_get_segment_t1(i).unwrap_or(0).max(0) as u64 * 10;
+            let (mut t0, mut t1) = (seg_t0, seg_t1);
+            if let Ok(n_tok) = state.full_n_tokens(i) {
+                let mut lo = u64::MAX;
+                let mut hi = 0u64;
+                for j in 0..n_tok {
+                    if let Ok(td) = state.full_get_token_data(i, j) {
+                        let a = td.t0.max(0) as u64 * 10;
+                        let b = td.t1.max(0) as u64 * 10;
+                        if b > a {
+                            lo = lo.min(a);
+                            hi = hi.max(b);
+                        }
+                    }
+                }
+                if lo != u64::MAX && hi > lo {
+                    t0 = lo;
+                    t1 = hi;
+                }
+            }
             words.push(Word::new(text, t0, t1));
         }
 
