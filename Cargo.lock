@@ -4556,6 +4556,7 @@ dependencies = [
  "anyhow",
  "serde",
  "thiserror 1.0.69",
+ "wortlaut-asr",
 ]
 
 [[package]]

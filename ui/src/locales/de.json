@@ -1,16 +1,12 @@
 {
   "_label": "Deutsch",
-
   "app.title": "Wortlaut",
   "app.tagline": "Animierte Untertitel für deine Clips. Lokal, offline, kostenlos.",
-
   "drop.headline": "Video hier ablegen",
   "drop.hint": "MP4, MOV und alles andere, was dein ffmpeg liest",
   "drop.button": "Video auswählen",
   "drop.active": "Loslassen, um den Clip zu laden",
-
   "file.change": "Anderes Video wählen",
-
   "style.heading": "Untertitel-Stil",
   "style.bold-center": "Bold Center",
   "style.bold-center.desc": "Drei Wörter, mittig, aktives Wort springt hervor",
@@ -19,26 +15,21 @@
   "style.karaoke-line": "Karaoke Line",
   "style.karaoke-line.desc": "Die Zeile füllt sich mit dem Gesprochenen",
   "style.preview.words": "genau deine wörter hier",
-
   "lang.heading": "Gesprochene Sprache",
   "lang.auto": "Automatisch erkennen",
   "lang.de": "Deutsch",
   "lang.en": "Englisch",
-
   "action.start": "Untertitel erzeugen",
   "action.again": "Nächstes Video untertiteln",
   "action.reveal": "Im Finder zeigen",
   "action.details": "Details",
-
   "stage.probing": "Video wird gelesen",
   "stage.extracting_audio": "Ton wird extrahiert",
   "stage.transcribing": "Sprache wird transkribiert",
   "stage.building_subtitles": "Untertitel werden gebaut",
   "stage.rendering": "Video wird gerendert",
   "stage.done": "Fertig",
-
   "result.heading": "Dein Video mit Untertiteln ist fertig",
-
   "setup.ffmpeg.heading": "ffmpeg fehlt",
   "setup.ffmpeg.body": "Wortlaut nutzt ffmpeg zum Lesen und Rendern von Video. Einmal installieren, dann Wortlaut neu starten.",
   "setup.ffmpeg.command": "brew install ffmpeg",
@@ -50,7 +41,6 @@
   "setup.model.download": "Herunterladen",
   "setup.model.downloading": "Lädt herunter",
   "setup.model.installed": "Installiert",
-
   "error.heading": "Das hat nicht geklappt",
   "error.ffmpeg_missing": "ffmpeg wurde auf diesem Rechner nicht gefunden.",
   "error.ffmpeg_failed": "ffmpeg konnte diese Datei nicht verarbeiten.",
@@ -64,5 +54,9 @@
   "error.asr_disabled": "In diesem Build ist die Spracherkennung abgeschaltet.",
   "error.busy": "Es wird bereits ein Video verarbeitet.",
   "error.join_failed": "Die Hintergrundaufgabe wurde unerwartet beendet.",
-  "error.unknown": "Da ist etwas schiefgelaufen."
+  "error.unknown": "Da ist etwas schiefgelaufen.",
+  "offset.heading": "Zeitversatz",
+  "offset.hint": "Verschiebe die Untertitel, wenn sie der Stimme vorauslaufen oder hinterherhinken.",
+  "offset.none": "Synchron",
+  "offset.value": "{sign}{s} s"
 }

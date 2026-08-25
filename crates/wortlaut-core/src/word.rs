@@ -47,34 +47,46 @@ pub fn plausible_duration_ms(text: &str) -> u64 {
     (chars * 75).clamp(180, 1500)
 }
 
-/// Whisper attributes the silence after a word to the word itself: a word
-/// followed by a pause is reported as lasting several seconds. That hides the
-/// pause from line grouping, so captions get built across silence and appear
-/// long before they are spoken.
+/// DTW reports where a word *starts*, not how long it lasts, so a word can
+/// arrive with a zero length span. This gives every word a duration that is
+/// long enough to read but never runs into the next word, which is what keeps
+/// a pause on screen as a pause.
 ///
-/// This trims each word back to a plausible speaking duration whenever the
-/// reported one is far longer, turning the swallowed silence back into a real
-/// gap. Timings that already look sane are left untouched.
-pub fn trim_trailing_silence(words: &[Word]) -> Vec<Word> {
+/// Two things are fixed here. A word that claims far more time than it could
+/// possibly take is cut back, so the silence it swallowed becomes a real gap
+/// again. A word with no measurable length is stretched to a readable one, but
+/// only into time that is actually free before the next word begins.
+pub fn settle_durations(words: &[Word]) -> Vec<Word> {
     words
         .iter()
-        .map(|w| {
-            let reported = w.end_ms.saturating_sub(w.start_ms);
+        .enumerate()
+        .map(|(i, w)| {
             let plausible = plausible_duration_ms(&w.text);
-            // Only step in when the claim is clearly out of proportion, so
-            // slow, drawn out speech survives.
-            if reported > plausible * 2 {
-                Word {
-                    text: w.text.clone(),
-                    start_ms: w.start_ms,
-                    end_ms: w.start_ms + plausible,
-                }
+            // Room available before the next word starts. The last word has no
+            // neighbour, so it may take the full plausible span.
+            let room = words
+                .get(i + 1)
+                .map(|nx| nx.start_ms.saturating_sub(w.start_ms))
+                .unwrap_or(u64::MAX);
+            let reported = w.end_ms.saturating_sub(w.start_ms);
+            // Trust a reported length that is in proportion; otherwise fall
+            // back to what the text itself suggests.
+            let wanted = if reported > 0 && reported <= plausible * 2 {
+                reported.max(MIN_WORD_MS)
             } else {
-                w.clone()
+                plausible
+            };
+            Word {
+                text: w.text.clone(),
+                start_ms: w.start_ms,
+                end_ms: w.start_ms + wanted.min(room).max(1),
             }
         })
         .collect()
 }
+
+/// Shortest a single word may stay on screen. Below this it reads as a flicker.
+const MIN_WORD_MS: u64 = 180;
 
 #[cfg(test)]
 mod silence_tests {
@@ -87,7 +99,7 @@ mod silence_tests {
     #[test]
     fn a_word_that_swallowed_a_pause_gets_trimmed() {
         // "Kleiner," reported as 2.14s: real speech plus 1.5s of silence.
-        let out = trim_trailing_silence(&[w("Kleiner,", 960, 3100)]);
+        let out = settle_durations(&[w("Kleiner,", 960, 3100)]);
         let dur = out[0].end_ms - out[0].start_ms;
         assert!(dur < 800, "expected a plausible duration, got {dur}ms");
         assert_eq!(out[0].start_ms, 960, "the start must not move");
@@ -96,7 +108,7 @@ mod silence_tests {
     #[test]
     fn normal_timings_are_left_alone() {
         let ws = [w("Aber", 6000, 6380), w("warte", 6380, 6850)];
-        let out = trim_trailing_silence(&ws);
+        let out = settle_durations(&ws);
         assert_eq!(out[0].end_ms, 6380);
         assert_eq!(out[1].end_ms, 6850);
     }
@@ -104,7 +116,7 @@ mod silence_tests {
     #[test]
     fn trimming_reveals_the_gap_that_was_hidden_in_the_word() {
         let ws = [w("Nein.", 8000, 10000), w("Ich", 10000, 10570)];
-        let out = trim_trailing_silence(&ws);
+        let out = settle_durations(&ws);
         let gap = out[1].start_ms - out[0].end_ms;
         assert!(gap > 800, "the pause must become visible again, got {gap}ms");
     }
@@ -113,5 +125,34 @@ mod silence_tests {
     fn a_long_word_is_allowed_to_take_longer() {
         // Long words legitimately take longer than short ones.
         assert!(plausible_duration_ms("Geschwindigkeit") > plausible_duration_ms("ich"));
+    }
+
+    #[test]
+    fn a_zero_length_dtw_word_becomes_readable() {
+        // DTW marks a start; a single token word arrives with no span at all.
+        let out = settle_durations(&[w("Komm", 5040, 5040)]);
+        let dur = out[0].end_ms - out[0].start_ms;
+        assert!(dur >= MIN_WORD_MS, "expected a readable duration, got {dur}ms");
+    }
+
+    #[test]
+    fn a_word_never_eats_into_the_next_one() {
+        // Two words 200ms apart: the first must stop before the second starts,
+        // even though its text alone suggests a longer span.
+        let out = settle_durations(&[w("Wahnsinn", 1000, 1000), w("ja", 1200, 1400)]);
+        assert!(
+            out[0].end_ms <= out[1].start_ms,
+            "{} ran into {}",
+            out[0].end_ms,
+            out[1].start_ms
+        );
+    }
+
+    #[test]
+    fn a_pause_after_a_word_survives_as_a_gap() {
+        // "noch." at 7.88s, next word at 10.18s: a 2.3s pause must stay a pause.
+        let out = settle_durations(&[w("noch.", 7880, 10000), w("Nein.", 10180, 10380)]);
+        let gap = out[1].start_ms - out[0].end_ms;
+        assert!(gap > 1500, "pause collapsed to {gap}ms");
     }
 }

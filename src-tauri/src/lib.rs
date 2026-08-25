@@ -163,12 +163,19 @@ struct DownloadProgress {
 
 // --- the actual work ------------------------------------------------------
 
+/// How far the captions may be shifted against the audio, in milliseconds.
+/// Negative moves them earlier. Wider than anyone should need, but a clip with
+/// a badly muxed audio track can be off by a lot.
+const OFFSET_MIN_MS: i64 = -2000;
+const OFFSET_MAX_MS: i64 = 2000;
+
 #[tauri::command]
 async fn process_video(
     app: AppHandle,
     path: String,
     style_id: String,
     language: String,
+    offset_ms: i64,
 ) -> Result<String, CommandError> {
     {
         let busy = app.state::<Busy>();
@@ -181,7 +188,7 @@ async fn process_video(
 
     let app_for_job = app.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
-        run_job(&app_for_job, &path, &style_id, &language)
+        run_job(&app_for_job, &path, &style_id, &language, offset_ms)
     })
     .await;
 
@@ -200,10 +207,15 @@ fn run_job(
     path: &str,
     style_id: &str,
     language: &str,
+    offset_ms: i64,
 ) -> Result<String, CommandError> {
-    let style: SubtitleStyle = StylePreset::from_id(style_id)
+    let mut style: SubtitleStyle = StylePreset::from_id(style_id)
         .ok_or_else(|| CommandError::new("unknown_style", style_id))?
         .style();
+    // A caption that lands a moment before the word is read as in sync; one
+    // that lands after it is read as late. The preset carries a small lead for
+    // that, and this lets the user nudge it when a clip needs more or less.
+    style.offset_ms = offset_ms.clamp(OFFSET_MIN_MS, OFFSET_MAX_MS);
 
     let (_model_id, model_path) =
         models::first_installed().ok_or_else(|| CommandError::new("model_missing", "no model"))?;

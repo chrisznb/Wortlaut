@@ -54,6 +54,9 @@ export default function App() {
   const [styles, setStyles] = useState<StyleInfo[]>([]);
   const [styleId, setStyleId] = useState("bold-center");
   const [spokenLang, setSpokenLang] = useState<string>("auto");
+  // Milliseconds the captions are shifted against the audio. Negative shows
+  // them earlier. Kept in sync with OFFSET_MIN_MS/OFFSET_MAX_MS in lib.rs.
+  const [offsetMs, setOffsetMs] = useState<number>(0);
 
   const [video, setVideo] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -153,6 +156,7 @@ export default function App() {
         path: video,
         styleId,
         language: spokenLang,
+        offsetMs,
       });
       setOutput(out);
       setPhase("done");
@@ -160,7 +164,7 @@ export default function App() {
       setError(asCommandError(e));
       setPhase("error");
     }
-  }, [video, styleId, spokenLang]);
+  }, [video, styleId, spokenLang, offsetMs]);
 
   const download = useCallback(
     async (id: string) => {
@@ -315,6 +319,36 @@ export default function App() {
                   {t(`lang.${code}`)}
                 </button>
               ))}
+            </div>
+          </section>
+
+          <section>
+            <span className="section-title">{t("offset.heading")}</span>
+            <div className="offset">
+              <input
+                type="range"
+                min={-1000}
+                max={1000}
+                step={50}
+                value={offsetMs}
+                onChange={(e) => setOffsetMs(Number(e.target.value))}
+                aria-label={t("offset.heading")}
+              />
+              <div className="offset-foot">
+                <small>{t("offset.hint")}</small>
+                <button
+                  className="chip"
+                  data-selected={offsetMs === 0}
+                  onClick={() => setOffsetMs(0)}
+                >
+                  {offsetMs === 0
+                    ? t("offset.none")
+                    : t("offset.value", {
+                        sign: offsetMs > 0 ? "+" : "-",
+                        s: (Math.abs(offsetMs) / 1000).toFixed(2),
+                      })}
+                </button>
+              </div>
             </div>
           </section>
         </>

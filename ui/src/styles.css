@@ -420,3 +420,47 @@ details.details pre {
     transform: rotate(360deg);
   }
 }
+
+/* Caption timing slider. The track is drawn from the accent so the centre
+   position reads as "in sync" without needing a label on the rail itself. */
+.offset {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.offset input[type="range"] {
+  width: 100%;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--accent-soft);
+  outline: none;
+}
+
+.offset input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: grab;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.offset input[type="range"]:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.offset-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.offset-foot small {
+  opacity: 0.7;
+  line-height: 1.4;
+}

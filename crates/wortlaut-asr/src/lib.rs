@@ -11,7 +11,10 @@
 use std::path::Path;
 
 use wortlaut_core::{Error, Result, Transcriber, Word};
-use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
+use whisper_rs::{
+    DtwMode, DtwParameters, FullParams, SamplingStrategy, WhisperContext,
+    WhisperContextParameters,
+};
 
 /// A loaded whisper model.
 pub struct WhisperTranscriber {
@@ -31,9 +34,20 @@ impl WhisperTranscriber {
             .ok_or_else(|| Error::Transcription("model path is not valid UTF-8".into()))?;
 
         let mut cparams = WhisperContextParameters::default();
-        // Large speedup for the encoder on Metal. We use segment level times,
-        // not DTW alignment, so flash attention is safe to leave on.
-        cparams.flash_attn(true);
+        // DTW alignment instead of the decoder's own token timestamps. Those
+        // are guesses spread evenly across a segment: on a clip with wind or
+        // traffic they report no pause at all, so captions run through silence.
+        // DTW aligns tokens against the encoder's attention and reports where a
+        // word really lands. Flash attention has to go: whisper.cpp cannot
+        // produce DTW timestamps with it on. Costs encoder speed, buys timing.
+        cparams.flash_attn(false);
+        // The shipped presets stop at large-v3, and large-v3-turbo has 4 decoder
+        // layers instead of 32, so its alignment heads are not those. TopMost is
+        // the model agnostic fallback and works for any layer count.
+        cparams.dtw_parameters(DtwParameters {
+            mode: DtwMode::TopMost { n_top: 2 },
+            dtw_mem_size: 1024 * 1024 * 128,
+        });
 
         let ctx = WhisperContext::new_with_params(path, cparams)
             .map_err(|e| Error::Transcription(format!("failed to load model: {e}")))?;
@@ -115,21 +129,39 @@ impl Transcriber for WhisperTranscriber {
             let seg_t1 = state.full_get_segment_t1(i).unwrap_or(0).max(0) as u64 * 10;
             let (mut t0, mut t1) = (seg_t0, seg_t1);
             if let Ok(n_tok) = state.full_n_tokens(i) {
-                let mut lo = u64::MAX;
-                let mut hi = 0u64;
+                // Never mix the two clocks. A DTW point and a decoder span
+                // measure different things, and taking min/max across both
+                // stretches a word to the union of the two, which is how a
+                // spoken "okay." ended up three seconds long.
+                let mut dtw_lo = u64::MAX;
+                let mut dtw_hi = 0u64;
+                let mut tok_lo = u64::MAX;
+                let mut tok_hi = 0u64;
                 for j in 0..n_tok {
                     if let Ok(td) = state.full_get_token_data(i, j) {
+                        if td.t_dtw > 0 {
+                            let c = td.t_dtw as u64 * 10;
+                            dtw_lo = dtw_lo.min(c);
+                            dtw_hi = dtw_hi.max(c);
+                        }
                         let a = td.t0.max(0) as u64 * 10;
                         let b = td.t1.max(0) as u64 * 10;
                         if b > a {
-                            lo = lo.min(a);
-                            hi = hi.max(b);
+                            tok_lo = tok_lo.min(a);
+                            tok_hi = tok_hi.max(b);
                         }
                     }
                 }
-                if lo != u64::MAX && hi > lo {
-                    t0 = lo;
-                    t1 = hi;
+                if dtw_lo != u64::MAX {
+                    // DTW marks where a token starts, so the span between the
+                    // first and last token of a word is a lower bound on its
+                    // length. A one token word gets a zero length span here;
+                    // settle_durations gives it a readable one later.
+                    t0 = dtw_lo;
+                    t1 = dtw_hi.max(dtw_lo);
+                } else if tok_lo != u64::MAX && tok_hi > tok_lo {
+                    t0 = tok_lo;
+                    t1 = tok_hi;
                 }
             }
             words.push(Word::new(text, t0, t1));
